@@ -204,7 +204,7 @@ public class ParcelleCulture {
         ResultSet r = s.executeQuery("select * from HistoriqueCulture where idParcelle = '"+t+"'");
         Vector v = new Vector();
         while (r.next()) {
-            v.add(new ParcelleCulture(r.getString(1),r.getString(2),r.getDouble(3),r.getDouble(4),r.getDate(5)));
+            v.add(new ParcelleCulture(r.getString(1),r.getString(2),r.getString(3),r.getDouble(4),r.getDouble(5),r.getDate(6)));
         }
         ParcelleCulture[] allParcelle = new ParcelleCulture[v.size()];
         v.copyInto(allParcelle);
@@ -228,5 +228,21 @@ public class ParcelleCulture {
         v.copyInto(allParcelle);
         s.close();
         return allParcelle;
+    }
+
+    public double getQuantiteCulture(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select sum(quantite) from HistoriqueCultureProprietaire WHERE proprietaire = '"+nId+"'");
+        double nC = 0; 
+        if (r.next()) {
+            nC = r.getDouble(1);
+        }
+        s.close();
+        return nC;
     }
 }

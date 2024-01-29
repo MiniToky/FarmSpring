@@ -288,4 +288,20 @@ public class Terrain {
         Date nD = new Date(utilDate.getTime());
         return nD;
     }
+
+    public double getTerrainNb(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select count (idTerrain) from Terrain where proprietaire = '"+nId+"'");
+        double nC = 0; 
+        if (r.next()) {
+            nC = r.getInt(1);
+        }
+        s.close();
+        return nC;
+    }
 }

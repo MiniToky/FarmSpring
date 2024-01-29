@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import webservice.demo.Models.tools.Connect;
 import webservice.demo.Models.information.Utilisateur;
 import webservice.demo.Models.propriete.Parcelle;
+import webservice.demo.Models.propriete.ParcelleCulture;
+import webservice.demo.Models.propriete.Simulation;
 import webservice.demo.Models.propriete.Terrain;
 import webservice.demo.Models.information.Culture;
 import webservice.demo.Models.information.Saison;
@@ -619,4 +621,347 @@ public class AppController {
 			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
 		}
     }
+
+	@GetMapping(value = "/nbcultures", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getNbCultures(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Culture nC = new Culture();
+			double n = nC.getCultureNb(c, nId);
+			JSONObject nbJson = new JSONObject();
+			nbJson.put("cultures", n);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.put(nbJson);
+			c.close();
+			return jsonArray.toString();
+			
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/nbterrains", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getNbTerrains(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Terrain nC = new Terrain();
+			double n = nC.getTerrainNb(c, nId);
+			JSONObject nbJson = new JSONObject();
+			nbJson.put("terrains", n);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.put(nbJson);
+			c.close();
+			return jsonArray.toString();
+			
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/nbparcellemoyen", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getNbParcelleMoyen(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Parcelle nC = new Parcelle();
+			double n = nC.getNbParcelleMoyen(c, nId);
+			JSONObject nbJson = new JSONObject();
+			nbJson.put("parcelles", n);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.put(nbJson);
+			c.close();
+			return jsonArray.toString();
+			
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/surfacemoyenneparcelle", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getSurfaceMoyenne(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Parcelle nC = new Parcelle();
+			double n = nC.getSurfaceMoyenne(c, nId);
+			JSONObject nbJson = new JSONObject();
+			nbJson.put("surface", n);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.put(nbJson);
+			c.close();
+			return jsonArray.toString();
+			
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/nbsimulation", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getNbSimulation(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Simulation nC = new Simulation();
+			double n = nC.getNbSimulation(c, nId);
+			JSONObject nbJson = new JSONObject();
+			nbJson.put("simulation", n);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.put(nbJson);
+			c.close();
+			return jsonArray.toString();
+			
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/rendement", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getRendement(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Simulation nC = new Simulation();
+			double n = nC.getQuantiteSimulation(c, nId);
+			ParcelleCulture p = new ParcelleCulture();
+			double nP = p.getQuantiteCulture(c,nId);
+			double r = nC.getTauxRendement(nP,n);
+			JSONObject nbJson = new JSONObject();
+			nbJson.put("rendement", r);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.put(nbJson);
+			c.close();
+			return jsonArray.toString();
+			
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PostMapping(value = "/insertParcelleCulture", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertParcelleCulture(@RequestParam String parcelle,@RequestParam String culture,@RequestParam String quantite,@RequestParam String date)
+    {
+        try{
+			Utilisateur u = new Utilisateur();
+            Date nD = u.getSqlDate(date);
+			double q = Double.parseDouble(quantite);
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			ParcelleCulture p = new ParcelleCulture();
+			ParcelleCulture nP = new ParcelleCulture(parcelle, culture, q, nD);
+			p.insertParcelleCulture(c,nP);
+			c.close();
+			return "{ \"success\": \"Insertion réussie\" }";
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/cultures/type", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getAllCultures(@RequestParam String type)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Culture t = new Culture();
+			Culture[] allCulture = t.findSpecifiedAllUserTypeCulture(c,type);
+			JSONArray jsonArray = new JSONArray();
+		    for (Culture culture : allCulture) {
+		        JSONObject cultureJson = new JSONObject();
+		        cultureJson.put("proprietaire", culture.getProprietaire());
+		        cultureJson.put("idCulture", culture.getId());
+		        cultureJson.put("nom", culture.getNom());
+		        cultureJson.put("type", culture.getType());
+		        cultureJson.put("prixAchat", culture.getPrixAchat());
+		        cultureJson.put("prixVente", culture.getPrixVente());
+		        cultureJson.put("saison", culture.getSaison());
+		        cultureJson.put("photo", culture.getPhoto());
+		        jsonArray.put(cultureJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/cultures/proprietaire", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getAllCulturesProprietaire(@RequestParam String proprietaire)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Culture t = new Culture();
+			Culture[] allCulture = t.findSpecifiedAllUserCulture(c,proprietaire);
+			JSONArray jsonArray = new JSONArray();
+		    for (Culture culture : allCulture) {
+		        JSONObject cultureJson = new JSONObject();
+		        cultureJson.put("proprietaire", culture.getProprietaire());
+		        cultureJson.put("idCulture", culture.getId());
+		        cultureJson.put("nom", culture.getNom());
+		        cultureJson.put("type", culture.getType());
+		        cultureJson.put("prixAchat", culture.getPrixAchat());
+		        cultureJson.put("prixVente", culture.getPrixVente());
+		        cultureJson.put("saison", culture.getSaison());
+		        cultureJson.put("photo", culture.getPhoto());
+		        jsonArray.put(cultureJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/cultures/parcelle", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getAllCulturesParcelleHistorique(@RequestParam String parcelle)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			ParcelleCulture t = new ParcelleCulture();
+			ParcelleCulture[] allCulture = t.findSpecifiedParcelleHistoriqueCulture(c,parcelle);
+			JSONArray jsonArray = new JSONArray();
+		    for (ParcelleCulture culture : allCulture) {
+		        JSONObject cultureJson = new JSONObject();
+				cultureJson.put("terrain", culture.getTerrain());
+		        cultureJson.put("parcelle", culture.getId());
+				cultureJson.put("culture", culture.getCulture());
+				cultureJson.put("quantite", culture.getQuantite());
+				cultureJson.put("cout", culture.getCoutRevient());
+				cultureJson.put("date", culture.getDateCulture());
+		        jsonArray.put(cultureJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PostMapping(value = "/insertSimulation", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertSimulation(@RequestParam String parcelle,@RequestParam String culture,@RequestParam String quantite,@RequestParam String date)
+    {
+        try{
+			Utilisateur u = new Utilisateur();
+            Date nD = u.getSqlDate(date);
+			double q = Double.parseDouble(quantite);
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Simulation p = new Simulation();
+			Simulation nP = new Simulation(parcelle, culture, q, nD);
+			p.insertSimulation(c,nP);
+			c.close();
+			return "{ \"success\": \"Insertion réussie\" }";
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/simulations", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getAllUserSimulation(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Simulation t = new Simulation();
+			Simulation[] allSimulation = t.findHistoriqueSimulationProprietaire(c,user);
+			JSONArray jsonArray = new JSONArray();
+		    for (Simulation simulation : allSimulation) {
+		        JSONObject simulationJson = new JSONObject();
+		        simulationJson.put("id", simulation.getId());
+				simulationJson.put("parcelle", simulation.getParcelle());
+				simulationJson.put("culture", simulation.getCulture());
+				simulationJson.put("quantite", simulation.getQuantite());
+				simulationJson.put("date", simulation.getSimulation());
+				simulationJson.put("terrain", simulation.getTerrain());
+				simulationJson.put("proprietaire", simulation.getProprietaire());
+		        jsonArray.put(simulationJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/simulations/terrain", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getAllUserSimulation(@RequestParam String user,@RequestParam String terrain)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Simulation t = new Simulation();
+			Simulation[] allSimulation = t.findHistoriqueSimulationProprietaireTerrain(c,user,terrain);
+			JSONArray jsonArray = new JSONArray();
+		    for (Simulation simulation : allSimulation) {
+		        JSONObject simulationJson = new JSONObject();
+		        simulationJson.put("id", simulation.getId());
+				simulationJson.put("parcelle", simulation.getParcelle());
+				simulationJson.put("culture", simulation.getCulture());
+				simulationJson.put("quantite", simulation.getQuantite());
+				simulationJson.put("date", simulation.getSimulation());
+				simulationJson.put("terrain", simulation.getTerrain());
+				simulationJson.put("proprietaire", simulation.getProprietaire());
+		        jsonArray.put(simulationJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+	
 }

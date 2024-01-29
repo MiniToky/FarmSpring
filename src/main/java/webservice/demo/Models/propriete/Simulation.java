@@ -11,6 +11,8 @@ public class Simulation {
     double quantite;
     Date simulation;
     double coutRevient;
+    String terrain;
+    String proprietaire;
 
     public String getId()
     {
@@ -108,6 +110,38 @@ public class Simulation {
         return;
     }
 
+    public String getTerrain()
+    {
+        return this.terrain;
+    }
+
+    public void setTerrain(String s) throws Exception
+    {
+        if(s != null){
+            this.terrain = s;
+        }
+        else{
+            throw new Exception("Terrain-non-valide");
+        }
+        return;
+    }
+
+    public String getProprietaire()
+    {
+        return this.proprietaire;
+    }
+
+    public void setProprietaire(String s) throws Exception
+    {
+        if(s != null){
+            this.terrain = s;
+        }
+        else{
+            throw new Exception("Proprietaire-non-valide");
+        }
+        return;
+    }
+
     public Simulation() throws Exception
     {
 
@@ -130,6 +164,17 @@ public class Simulation {
         this.setSimulation(s);
     }
 
+    public Simulation(String nId,String p,String c,double q,Date s,String t,String pr) throws Exception
+    {   
+        this.setId(nId);
+        this.setParcelle(p);
+        this.setCulture(c);
+        this.setQuantite(q);
+        this.setSimulation(s);
+        this.setTerrain(t);
+        this.setProprietaire(pr);
+    }
+
     public Simulation(String nId,String p,String c,double q,double cR,Date s) throws Exception
     {   
         this.setId(nId);
@@ -147,7 +192,7 @@ public class Simulation {
             c = con.makeConnection();
         }
         Statement s = c.createStatement();
-        int n = s.executeUpdate("insert into Simulation values ('SIM' || nextval('simulationSeq'),'"+p.getParcelle()+"','"+p.getCulture()+"',"+p.getQuantite()+",TO_DATE('"+p.getSimulation()+"','YYYY-MM-DD))");
+        int n = s.executeUpdate("insert into Simulation values ('SIM' || nextval('simulationSeq'),'"+p.getParcelle()+"','"+p.getCulture()+"',"+p.getQuantite()+",TO_DATE('"+p.getSimulation()+"','YYYY-MM-DD'))");
         s.close();
     }
 
@@ -187,10 +232,80 @@ public class Simulation {
         return allSimulation;
     }
 
+    public double getNbSimulation(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("SELECT count(idSimulation) from SimulationCultureProprietaire WHERE proprietaire = '"+nId+"'");
+        double nC = 0; 
+        if (r.next()) {
+            nC = r.getDouble(1);
+        }
+        s.close();
+        return nC;
+    }
+
+    public double getQuantiteSimulation(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select sum(quantite) from SimulationCultureProprietaire WHERE proprietaire = '"+nId+"'");
+        double nC = 0; 
+        if (r.next()) {
+            nC = r.getDouble(1);
+        }
+        s.close();
+        return nC;
+    }
+
+    public Simulation[] findHistoriqueSimulationProprietaire(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select * from SimulationCultureProprietaire where proprietaire = '"+nId+"'");
+        Vector v = new Vector();
+        while (r.next()) {
+            v.add(new Simulation(r.getString(1),r.getString(2),r.getString(3),r.getDouble(4),r.getDate(6),r.getString(7),r.getString(8)));
+        }
+        Simulation[] allSimulation = new Simulation[v.size()];
+        v.copyInto(allSimulation);
+        s.close();
+        return allSimulation;
+    }
+
+    public Simulation[] findHistoriqueSimulationProprietaireTerrain(Connection c,String nId,String t) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select * from SimulationCultureProprietaire where proprietaire = '"+nId+"' and terrain = '"+t+"'");
+        Vector v = new Vector();
+        while (r.next()) {
+            v.add(new Simulation(r.getString(1),r.getString(2),r.getString(3),r.getDouble(4),r.getDate(6),r.getString(7),r.getString(8)));
+        }
+        Simulation[] allSimulation = new Simulation[v.size()];
+        v.copyInto(allSimulation);
+        s.close();
+        return allSimulation;
+    }
 
     public double getTauxRendement(double c,double d)
     {
-        double r = (c/d) * 100;
+        double r = 0;
+        if (c > 0 || d > 0 || (c > 0 && d > 0)) {
+            r = (c/d) * 100; 
+        }
         return r;
     }
 }

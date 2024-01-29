@@ -313,4 +313,56 @@ public class Culture {
         s.close();
         return nC;
     }
+
+    public double getCultureNb(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select count (idCulture) from AllUtilisateurCulture where idUtilisateur = '"+nId+"'");
+        double nC = 0; 
+        if (r.next()) {
+            nC = r.getInt(1);
+        }
+        s.close();
+        return nC;
+    }
+
+    public Culture[] findSpecifiedAllUserTypeCulture(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select * from AllUtilisateurCultureDetails where type = '"+nId+"'");
+        Vector v = new Vector();
+        while (r.next()) {
+            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8)));
+        }
+        Culture[] allCulture = new Culture[v.size()];
+        v.copyInto(allCulture);
+        s.close();
+        return allCulture;
+    }
+
+    public Culture[] findSpecifiedAllUserCulture(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select * from AllUtilisateurCultureDetails where proprietaire = '"+nId+"'");
+        Vector v = new Vector();
+        while (r.next()) {
+            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8)));
+        }
+        Culture[] allCulture = new Culture[v.size()];
+        v.copyInto(allCulture);
+        s.close();
+        return allCulture;
+    }
 }

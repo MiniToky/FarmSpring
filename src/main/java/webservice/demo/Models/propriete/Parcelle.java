@@ -216,4 +216,36 @@ public class Parcelle {
         s.close();
         return allParcelle;
     }
+
+    public double getNbParcelleMoyen(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("SELECT AVG(nbParcelle) as nbMoyen FROM (SELECT COUNT(idParcelle) as nbParcelle FROM ParcelleDetailsTerrainProprietaire WHERE proprietaire = '"+nId+"' GROUP BY terrain) AS getNbMoyen");
+        double nC = 0; 
+        if (r.next()) {
+            nC = r.getDouble(1);
+        }
+        s.close();
+        return nC;
+    }
+
+    public double getSurfaceMoyenne(Connection c,String nId) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("SELECT avg(superficie) from ParcelleDetailsTerrainProprietaire where proprietaire = '"+nId+"'");
+        double nC = 0; 
+        if (r.next()) {
+            nC = r.getDouble(1);
+        }
+        s.close();
+        return nC;
+    }
 }
