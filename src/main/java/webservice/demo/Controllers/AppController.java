@@ -1,0 +1,622 @@
+package webservice.demo.Controllers;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+
+import webservice.demo.Models.tools.Connect;
+import webservice.demo.Models.information.Utilisateur;
+import webservice.demo.Models.propriete.Parcelle;
+import webservice.demo.Models.propriete.Terrain;
+import webservice.demo.Models.information.Culture;
+import webservice.demo.Models.information.Saison;
+import webservice.demo.Models.information.TypeCulture;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.Date;
+import java.util.UUID;
+
+@RestController
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
+public class AppController {
+
+    @GetMapping(value = "/accueilBack", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String accueilBack() {
+        return "{\"message\": \"Welcome to the Back Office!\"}";
+    }
+
+    @GetMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String login(@RequestParam String mail, @RequestParam String motDePasse)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Utilisateur u = new Utilisateur();
+			int checkMail = u.checkMail(c,mail);
+			if (checkMail > 0) {
+				int checkLog = u.checkLogin(c,mail,motDePasse);
+				if (checkLog > 0) {
+					Utilisateur nU = u.findSpecifiedUtilisateur(c,mail,motDePasse);
+					JSONObject utilisateurJson = new JSONObject();
+				    utilisateurJson.put("id", nU.getId());
+				    utilisateurJson.put("nom", nU.getNom());
+				    utilisateurJson.put("prenom", nU.getPrenom());
+				    utilisateurJson.put("dateNaissance", nU.getNaissance());
+				    utilisateurJson.put("mail", nU.getMail());
+				    utilisateurJson.put("motDePasse", nU.getMotDePasse());
+				    utilisateurJson.put("pseudo", nU.getPseudo());
+				    JSONArray jsonArray = new JSONArray();
+				    jsonArray.put(utilisateurJson);
+				    c.close();
+				    return jsonArray.toString();
+				}
+				else{
+					c.close();
+					return "{ \"error\": \"Mot de Passe incorrect, veuillez réessayer\" }";
+				}
+			}
+			else {
+				c.close();
+				return "{ \"error\": \"Vous n'avez pas de compte. Inscrivez-vous\" }";
+			}
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+    @PostMapping(value = "/insertUser", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertUser(@RequestParam String nom, @RequestParam String prenom,@RequestParam String naissance,@RequestParam String mail, @RequestParam String mdp, @RequestParam String pseudo)
+    {
+        try{
+			Utilisateur u = new Utilisateur();
+            Date nD = u.getSqlDate(naissance);
+            Connect con = new Connect();
+			Connection c = con.makeConnection();
+			int checkMail = u.checkMail(c,mail);
+			if (checkMail > 0) {
+				c.close();
+				return "{ \"error\": \"Ce mail est déja associé à un autre compte\" }";	
+			}
+            else {
+				Utilisateur nU = new Utilisateur(nom,prenom,nD,mail,mdp,pseudo);
+				u.insertUtilisateur(c,nU);
+				c.close();
+				return "{ \"success\": \"Insertion réussie\" }";	
+			}
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+    private String extractFileName(MultipartFile file) {
+        String originalFileName = file.getOriginalFilename();
+    
+        if (originalFileName != null) {
+            String[] parts = originalFileName.split("\\.");
+            if (parts.length > 1) {
+                // Extract the file extension
+                String extension = parts[parts.length - 1];
+                return UUID.randomUUID().toString() + "." + extension;
+            }
+        }
+    
+        return UUID.randomUUID().toString();
+    }
+    
+    private String uploadFile(MultipartFile file, String uploadPath) throws IOException {
+        String fileName = extractFileName(file);
+        String sanitizedFileName = fileName.replaceAll("\\s+", "_");
+        String fileExtension = sanitizedFileName.substring(sanitizedFileName.lastIndexOf("."));
+        String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+    
+        File uploadDirectory = new File(uploadPath);
+        if (!uploadDirectory.exists()) {
+            if (!uploadDirectory.mkdirs()) {
+                throw new IOException("Failed to create upload directory");
+            }
+        }
+    
+        String filePath = uploadDirectory.getAbsolutePath() + File.separatorChar + uniqueFileName;
+    
+        try (InputStream input = file.getInputStream();
+             OutputStream output = new FileOutputStream(filePath)) {
+    
+            byte[] buffer = new byte[1024];
+            int length;
+    
+            while ((length = input.read(buffer)) > 0) {
+                output.write(buffer, 0, length);
+            }
+        } catch (IOException e) {
+            throw new IOException("Failed to write the uploaded file", e);
+        }
+    
+        return "user_uploads/" + uniqueFileName;
+    }
+
+    @PostMapping(value = "/insertCulture", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertCulture(@RequestParam String user, @RequestParam String nom, @RequestParam String type, @RequestParam String prixAchat,@RequestParam String prixVente, @RequestParam String saison, @RequestParam("photo") MultipartFile file,HttpServletRequest request) {
+        String uploadPath = request.getServletContext().getRealPath("") + File.separator + "user_uploads";
+        File uploadDir = new File(uploadPath);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+        }
+
+        try {
+            Connect con = new Connect();
+            Connection c = con.makeConnection();
+            String pr = user;
+            String n = nom;
+            String t = type;
+            double pA = Double.parseDouble(prixAchat);
+            double pV = Double.parseDouble(prixVente);
+            String s = saison;
+
+            String filePath = uploadFile(file, uploadPath);
+
+            Culture cul = new Culture();
+            Culture nCul = new Culture(n, t, pA, pV, s, filePath);
+
+            cul.insertCulture(c, nCul);
+
+            String idCul = cul.getIdLastRecord(c);
+
+            Culture nCul2 = new Culture(idCul, pr);
+
+            cul.insertCultureUtilisateur(c, nCul2);
+
+            c.close();
+            return "{ \"success\": \"Insertion réussie\" }";
+        } 
+
+        catch (Exception e) {
+            e.printStackTrace();
+            return "{ \"error\": \"" + e.getMessage() + "\" }";
+        }
+    }
+
+    @GetMapping(value = "/types", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getTypes()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			TypeCulture t = new TypeCulture();
+			TypeCulture[] allType = t.findType(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (TypeCulture type : allType) {
+		        JSONObject typeJson = new JSONObject();
+		        typeJson.put("idType", type.getId());
+		        typeJson.put("nom", type.getNom());
+		        jsonArray.put(typeJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+    @GetMapping(value = "/saisons", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getSaisons()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Saison s = new Saison();
+			Saison[] allSaison = s.findSaison(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (Saison saison : allSaison) {
+		        JSONObject saisonJson = new JSONObject();
+		        saisonJson.put("idSaison", saison.getId());
+		        saisonJson.put("nom", saison.getNom());
+		        saisonJson.put("debut", saison.getDebut());
+		        saisonJson.put("fin", saison.getFin());
+		        jsonArray.put(saisonJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+    @GetMapping(value = "/usercultures", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getUserCultures(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Culture t = new Culture();
+			Culture[] allCulture = t.findSpecifiedUserCulture(c,nId);
+			JSONArray jsonArray = new JSONArray();
+		    for (Culture culture : allCulture) {
+		        JSONObject cultureJson = new JSONObject();
+		        cultureJson.put("proprietaire", culture.getProprietaire());
+		        cultureJson.put("idCulture", culture.getId());
+		        cultureJson.put("nom", culture.getNom());
+		        cultureJson.put("type", culture.getType());
+		        cultureJson.put("prixAchat", culture.getPrixAchat());
+		        cultureJson.put("prixVente", culture.getPrixVente());
+		        cultureJson.put("saison", culture.getSaison());
+		        cultureJson.put("photo", culture.getPhoto());
+		        jsonArray.put(cultureJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PutMapping(value = "/validerTerrain", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String validerTerrain(@RequestParam String terrain)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String t = terrain;
+			Terrain nT = new Terrain();
+			nT.validerTerrain(c,t);
+			c.close();
+			return "{ \"success\": \"Validation réussie\" }";
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/terrains", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getTerrains()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Terrain t = new Terrain();
+			Terrain[] allTerrain = t.findAllTerrain(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (Terrain terrain : allTerrain) {
+		        JSONObject terrainJson = new JSONObject();
+		        terrainJson.put("idTerrain", terrain.getId());
+		        terrainJson.put("proprietaire", terrain.getProprietaire());
+		        terrainJson.put("description", terrain.getDescription());
+		        terrainJson.put("localisation", terrain.getLocalisation());
+		        terrainJson.put("photo", terrain.getPhoto());
+		        terrainJson.put("creation", terrain.getCreation());
+		        terrainJson.put("etat", terrain.getEtat());
+		        jsonArray.put(terrainJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/userterrains", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getUserTerrains(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Terrain t = new Terrain();
+			Terrain[] allTerrain = t.findAllUserTerrain(c,nId);
+			JSONArray jsonArray = new JSONArray();
+		    for (Terrain terrain : allTerrain) {
+		        JSONObject terrainJson = new JSONObject();
+		        terrainJson.put("idTerrain", terrain.getId());
+		        terrainJson.put("proprietaire", terrain.getProprietaire());
+		        terrainJson.put("description", terrain.getDescription());
+		        terrainJson.put("localisation", terrain.getLocalisation());
+		        terrainJson.put("photo", terrain.getPhoto());
+		        terrainJson.put("creation", terrain.getCreation());
+		        terrainJson.put("etat", terrain.getEtat());
+		        jsonArray.put(terrainJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/userterrainsnonvalide", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getUserTerrainsNonValide(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Terrain t = new Terrain();
+			Terrain[] allTerrain = t.findAllUserTerrainNonValide(c,nId);
+			JSONArray jsonArray = new JSONArray();
+		    for (Terrain terrain : allTerrain) {
+		        JSONObject terrainJson = new JSONObject();
+		        terrainJson.put("idTerrain", terrain.getId());
+		        terrainJson.put("proprietaire", terrain.getProprietaire());
+		        terrainJson.put("description", terrain.getDescription());
+		        terrainJson.put("localisation", terrain.getLocalisation());
+		        terrainJson.put("photo", terrain.getPhoto());
+		        terrainJson.put("creation", terrain.getCreation());
+		        terrainJson.put("etat", terrain.getEtat());
+		        jsonArray.put(terrainJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/userfirstterrains", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getUserFirstTerrains(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Terrain t = new Terrain();
+			Terrain[] allTerrain = t.findAllFirstUserTerrain(c,nId);
+			JSONArray jsonArray = new JSONArray();
+		    for (Terrain terrain : allTerrain) {
+		        JSONObject terrainJson = new JSONObject();
+		        terrainJson.put("idTerrain", terrain.getId());
+		        terrainJson.put("proprietaire", terrain.getProprietaire());
+		        terrainJson.put("description", terrain.getDescription());
+		        terrainJson.put("localisation", terrain.getLocalisation());
+		        terrainJson.put("photo", terrain.getPhoto());
+		        terrainJson.put("creation", terrain.getCreation());
+		        terrainJson.put("etat", terrain.getEtat());
+		        jsonArray.put(terrainJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PostMapping(value = "/insertTerrain", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertTerrain(@RequestParam String user, @RequestParam String description, @RequestParam String localisation, @RequestParam("photo") MultipartFile file, @RequestParam String creation,HttpServletRequest request) {
+        String uploadPath = request.getServletContext().getRealPath("") + File.separator + "user_uploads";
+        File uploadDir = new File(uploadPath);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+        }
+
+        try {
+            Connect con = new Connect();
+            Connection c = con.makeConnection();
+            String pr = user;
+            String desc = description;
+            String l = localisation;
+
+            String filePath = uploadFile(file, uploadPath);
+
+            Terrain t = new Terrain();
+
+            Date cr = t.getSqlDate(creation);
+
+            int etat = 0;
+
+            Terrain nT = new Terrain(pr,desc,l,filePath,cr,etat);
+
+            t.insertTerrain(c, nT);
+
+            c.close();
+            return "{ \"success\": \"Insertion réussie\" }";
+        } 
+
+        catch (Exception e) {
+            e.printStackTrace();
+            return "{ \"error\": \"" + e.getMessage() + "\" }";
+        }
+    }
+
+	@PostMapping(value = "/insertParcelle", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertParcelle(@RequestParam String longueur, @RequestParam String largeur,@RequestParam String terrain)
+    {
+        try{
+			double lo = Double.parseDouble(longueur);
+            double larg = Double.parseDouble(largeur);
+            String t = terrain;
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Parcelle p = new Parcelle();
+			Parcelle nP = new Parcelle(lo,larg,t);
+			p.insertParcelle(c,nP);
+			c.close();
+			return "{ \"success\": \"Insertion réussie\" }";
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/parcellesterrain", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getParcellesTerrain(@RequestParam String terrain)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = terrain;
+			Parcelle p = new Parcelle();
+			Parcelle[] allParcelle = p.findSpecifiedTerrainParcelle(c,nId);
+			JSONArray jsonArray = new JSONArray();
+		    for (Parcelle parcelle : allParcelle) {
+		        JSONObject parcelleJson = new JSONObject();
+		        parcelleJson.put("idParcelle", parcelle.getId());
+		        parcelleJson.put("superficie", parcelle.getSuperficie());
+		        parcelleJson.put("terrain", parcelle.getTerrain());
+		        jsonArray.put(parcelleJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PostMapping(value = "/insertParcelleCulturePossible", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertParcelleCulturePossible(@RequestParam String parcelle, @RequestParam String type)
+    {
+        try{
+			String t = parcelle;
+            String nT = type;
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Parcelle p = new Parcelle();
+			Parcelle nP = new Parcelle(t,nT);
+			p.insertParcelleCulturePossible(c,nP);
+			c.close();
+			return "{ \"success\": \"Insertion réussie\" }";
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/parcelleculturespossibles", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getParcelleCulturePossible(@RequestParam String parcelle)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = parcelle;
+			Parcelle p = new Parcelle();
+			Parcelle[] allParcelle = p.findSpecifiedParcelleCulturePossible(c,nId);
+			JSONArray jsonArray = new JSONArray();
+		    for (Parcelle parcelles : allParcelle) {
+		        JSONObject parcelleJson = new JSONObject();
+		        parcelleJson.put("idParcelle", parcelles.getId());
+		        parcelleJson.put("culture", parcelles.getCulture());
+		        jsonArray.put(parcelleJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PutMapping(value = "/updateTerrain", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String updateTerrain(@RequestParam String terrain, @RequestParam String description, @RequestParam("photo") MultipartFile file, HttpServletRequest request) {
+        String uploadPath = request.getServletContext().getRealPath("") + File.separator + "user_uploads";
+        File uploadDir = new File(uploadPath);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+        }
+
+        try {
+            Connect con = new Connect();
+            Connection c = con.makeConnection();
+            String t = terrain;
+			String d = description;
+
+            String filePath = uploadFile(file, uploadPath);
+
+            Terrain t2 = new Terrain(t,d,filePath);
+
+			Terrain nT = new Terrain();
+
+			nT.updateTerrain(c,t2);
+            c.close();
+            return "{ \"success\": \"Mise à jour réussie\" }";
+        } 
+
+        catch (Exception e) {
+            e.printStackTrace();
+            return "{ \"error\": \"" + e.getMessage() + "\" }";
+        }
+    }
+
+	@GetMapping(value = "/cultures", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getCultures()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Culture t = new Culture();
+			Culture[] allCulture = t.findAllUserCulture(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (Culture culture : allCulture) {
+		        JSONObject cultureJson = new JSONObject();
+		        cultureJson.put("proprietaire", culture.getProprietaire());
+		        cultureJson.put("idCulture", culture.getId());
+		        cultureJson.put("nom", culture.getNom());
+		        cultureJson.put("type", culture.getType());
+		        cultureJson.put("prixAchat", culture.getPrixAchat());
+		        cultureJson.put("prixVente", culture.getPrixVente());
+		        cultureJson.put("saison", culture.getSaison());
+		        cultureJson.put("photo", culture.getPhoto());
+		        jsonArray.put(cultureJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+}
