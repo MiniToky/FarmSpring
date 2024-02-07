@@ -128,6 +128,11 @@ public class Utilisateur {
 
     }
 
+    public Utilisateur(String p) throws Exception
+    {
+        this.setPseudo(p);
+    }
+
     public Utilisateur(String n, String p, Date d, String m, String pwd, String ps) throws Exception
     {
         this.setNom(n);
@@ -171,6 +176,24 @@ public class Utilisateur {
         Vector v = new Vector();
         while (r.next()) {
             v.add(new Utilisateur(r.getString(1),r.getString(2),r.getString(3),r.getDate(4),r.getString(5),r.getString(6),r.getString(7)));
+        }
+        Utilisateur[] allUtilisateur = new Utilisateur[v.size()];
+        v.copyInto(allUtilisateur);
+        s.close();
+        return allUtilisateur;
+    }
+
+    public Utilisateur[] findProprietaire(Connection c) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select pseudo from Utilisateur");
+        Vector v = new Vector();
+        while (r.next()) {
+            v.add(new Utilisateur(r.getString(1)));
         }
         Utilisateur[] allUtilisateur = new Utilisateur[v.size()];
         v.copyInto(allUtilisateur);

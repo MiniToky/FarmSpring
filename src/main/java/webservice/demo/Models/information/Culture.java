@@ -174,7 +174,7 @@ public class Culture {
         this.setPhoto(p);
     }
 
-    public Culture(String pr, String nId, String n, String t, double pA, double pV, String s, String p) throws Exception
+    public Culture(String pr, String nId, String n, String t, double pA, double pV, String s) throws Exception
     {
         this.setProprietaire(pr);
         this.setId(nId);
@@ -183,7 +183,6 @@ public class Culture {
         this.setPrixAchat(pA);
         this.setPrixVente(pV);
         this.setSaison(s);
-        this.setPhoto(p);
     }
 
     public void insertCulture(Connection c, Culture u) throws Exception
@@ -252,7 +251,7 @@ public class Culture {
         ResultSet r = s.executeQuery("select * from AllUtilisateurCulture where idUtilisateur = '"+nId+"'");
         Vector v = new Vector();
         while (r.next()) {
-            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8)));
+            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7)));
         }
         Culture[] allCulture = new Culture[v.size()];
         v.copyInto(allCulture);
@@ -270,7 +269,7 @@ public class Culture {
         ResultSet r = s.executeQuery("select * from AllUtilisateurCulture where idUtilisateur = '"+nId+"' and type = '"+t+"'");
         Vector v = new Vector();
         while (r.next()) {
-            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8)));
+            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7)));
         }
         Culture[] allCulture = new Culture[v.size()];
         v.copyInto(allCulture);
@@ -288,7 +287,7 @@ public class Culture {
         ResultSet r = s.executeQuery("select * from AllUtilisateurCultureDetails");
         Vector v = new Vector();
         while (r.next()) {
-            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8)));
+            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7)));
         }
         Culture[] allCulture = new Culture[v.size()];
         v.copyInto(allCulture);
@@ -306,7 +305,7 @@ public class Culture {
         ResultSet r = s.executeQuery("select * from AllUtilisateurCultureDetails where idCulture = '"+nId+"'");
         Culture nC = new Culture();
         if (r.next()) {
-            Culture nC2 = new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8));
+            Culture nC2 = new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7));
             s.close();
             return nC2;
         }
@@ -340,7 +339,7 @@ public class Culture {
         ResultSet r = s.executeQuery("select * from AllUtilisateurCultureDetails where type = '"+nId+"'");
         Vector v = new Vector();
         while (r.next()) {
-            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8)));
+            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7)));
         }
         Culture[] allCulture = new Culture[v.size()];
         v.copyInto(allCulture);
@@ -358,7 +357,7 @@ public class Culture {
         ResultSet r = s.executeQuery("select * from AllUtilisateurCultureDetails where proprietaire = '"+nId+"'");
         Vector v = new Vector();
         while (r.next()) {
-            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7),r.getString(8)));
+            v.add(new Culture(r.getString(1),r.getString(2),r.getString(3),r.getString(4),r.getDouble(5),r.getDouble(6),r.getString(7)));
         }
         Culture[] allCulture = new Culture[v.size()];
         v.copyInto(allCulture);

@@ -20,8 +20,14 @@ import webservice.demo.Models.propriete.ParcelleCulture;
 import webservice.demo.Models.propriete.Simulation;
 import webservice.demo.Models.propriete.Terrain;
 import webservice.demo.Models.information.Culture;
+import webservice.demo.Models.information.Portefeuille;
 import webservice.demo.Models.information.Saison;
 import webservice.demo.Models.information.TypeCulture;
+import webservice.demo.Models.discussion.Message;
+
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoDatabase;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +41,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.Date;
 import java.util.UUID;
+import java.sql.Timestamp;
 
 @RestController
 @CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
@@ -809,7 +816,6 @@ public class AppController {
 		        cultureJson.put("prixAchat", culture.getPrixAchat());
 		        cultureJson.put("prixVente", culture.getPrixVente());
 		        cultureJson.put("saison", culture.getSaison());
-		        cultureJson.put("photo", culture.getPhoto());
 		        jsonArray.put(cultureJson);
 		    }
 		    c.close();
@@ -840,7 +846,6 @@ public class AppController {
 		        cultureJson.put("prixAchat", culture.getPrixAchat());
 		        cultureJson.put("prixVente", culture.getPrixVente());
 		        cultureJson.put("saison", culture.getSaison());
-		        cultureJson.put("photo", culture.getPhoto());
 		        jsonArray.put(cultureJson);
 		    }
 		    c.close();
@@ -956,6 +961,314 @@ public class AppController {
 		    }
 		    c.close();
 		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PostMapping(value = "/insertMessage", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertMessage(@RequestParam String envoyeur, @RequestParam String receveur,@RequestParam String contenu)
+    {
+        try{
+			Connect con = new Connect();
+			MongoDatabase c = con.makeMongoConnection();
+			Message m = new Message();
+			Timestamp t = m.getNow();
+			Message nM = new Message(envoyeur,receveur,contenu,t);
+			m.insertMessage(c,nM);
+			return "{ \"success\": \"Insertion réussie\" }";
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/getMessageEnvoye", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getMessageEnvoye(@RequestParam String envoyeur, @RequestParam String receveur)
+    {
+        try{
+			Connect con = new Connect();
+			MongoDatabase c = con.makeMongoConnection();
+			Message m = new Message();
+			Message[] allMessage = m.findConservationUser(c,envoyeur,receveur);
+			JSONArray jsonArray = new JSONArray();
+		    for (Message message : allMessage) {
+		        JSONObject messageJson = new JSONObject();
+		        messageJson.put("envoyeur", message.getEnvoyeur());
+				messageJson.put("receveur", message.getReceveur());
+				messageJson.put("contenu", message.getContenu());
+				messageJson.put("envoi", message.getEnvoi());
+		        jsonArray.put(messageJson);
+		    }
+			return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/getMessageRecu", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getMessageRecu(@RequestParam String envoyeur, @RequestParam String receveur)
+    {
+        try{
+			Connect con = new Connect();
+			MongoDatabase c = con.makeMongoConnection();
+			Message m = new Message();
+			Message[] allMessage = m.findConservationUser(c,receveur,envoyeur);
+			JSONArray jsonArray = new JSONArray();
+		    for (Message message : allMessage) {
+		        JSONObject messageJson = new JSONObject();
+		        messageJson.put("envoyeur", message.getEnvoyeur());
+				messageJson.put("receveur", message.getReceveur());
+				messageJson.put("contenu", message.getContenu());
+				messageJson.put("envoi", message.getEnvoi());
+		        jsonArray.put(messageJson);
+		    }
+			return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/allcultures", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getAllCultures()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Culture t = new Culture();
+			Culture[] allCulture = t.findAllUserCulture(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (Culture culture : allCulture) {
+		        JSONObject cultureJson = new JSONObject();
+		        cultureJson.put("proprietaire", culture.getProprietaire());
+		        cultureJson.put("idCulture", culture.getId());
+		        cultureJson.put("nom", culture.getNom());
+		        cultureJson.put("type", culture.getType());
+		        cultureJson.put("prixAchat", culture.getPrixAchat());
+		        cultureJson.put("prixVente", culture.getPrixVente());
+		        cultureJson.put("saison", culture.getSaison());
+		        jsonArray.put(cultureJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/proprietaires", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getProprietaires()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Utilisateur t = new Utilisateur();
+			Utilisateur[] all = t.findProprietaire(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (Utilisateur utilisateur : all) {
+		        JSONObject utilisateurJson = new JSONObject();
+		        utilisateurJson.put("pseudo", utilisateur.getPseudo());
+		        jsonArray.put(utilisateurJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/parcelles", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getParcelles()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Parcelle p = new Parcelle();
+			Parcelle[] all = p.findParcelle(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (Parcelle parcelle : all) {
+		        JSONObject parcelleJson = new JSONObject();
+		        parcelleJson.put("idParcelle", parcelle.getId());
+				parcelleJson.put("superficie", parcelle.getSuperficie());
+				parcelleJson.put("terrain", parcelle.getTerrain());
+		        jsonArray.put(parcelleJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/parcellescultures", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getParcellesCultures()
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			ParcelleCulture p = new ParcelleCulture();
+			ParcelleCulture[] all = p.findParcelleCultures(c);
+			JSONArray jsonArray = new JSONArray();
+		    for (ParcelleCulture parcelle : all) {
+		        JSONObject parcelleJson = new JSONObject();
+		        parcelleJson.put("terrain", parcelle.getTerrain());
+				parcelleJson.put("idParcelle", parcelle.getId());
+				parcelleJson.put("culture", parcelle.getCulture());
+				parcelleJson.put("type", parcelle.getType());
+				parcelleJson.put("quantite", parcelle.getQuantite());
+				parcelleJson.put("date", parcelle.getDateCulture());
+				parcelleJson.put("proprietaire", parcelle.getProprietaire());
+		        jsonArray.put(parcelleJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+
+
+	@GetMapping(value = "/parcellesculturespossibles", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getUserParcellesCulturesPossible(@RequestParam String utilisateur, @RequestParam String parcelle)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			ParcelleCulture p = new ParcelleCulture();
+			ParcelleCulture[] all = p.findSpecifiedCultureParcellePossible(c, utilisateur, parcelle);
+			JSONArray jsonArray = new JSONArray();
+		    for (ParcelleCulture parc : all) {
+		        JSONObject parcelleJson = new JSONObject();
+		        parcelleJson.put("idParcelle", parc.getId());
+				parcelleJson.put("type", parc.getType());
+				parcelleJson.put("culture", parc.getCulture());
+				parcelleJson.put("proprietaire", parc.getProprietaire());
+		        jsonArray.put(parcelleJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/parcellesuser", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getUserParcelles(@RequestParam String utilisateur)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Parcelle p = new Parcelle();
+			Parcelle[] all = p.findSpecifiedUserParcelle(c, utilisateur);
+			JSONArray jsonArray = new JSONArray();
+		    for (Parcelle parc : all) {
+		        JSONObject parcelleJson = new JSONObject();
+		        parcelleJson.put("idParcelle", parc.getId());
+				parcelleJson.put("superficie", parc.getSuperficie());
+				parcelleJson.put("terrain", parc.getTerrain());
+				parcelleJson.put("proprietaire", parc.getProprietaire());
+		        jsonArray.put(parcelleJson);
+		    }
+		    c.close();
+		    return jsonArray.toString();
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@PostMapping(value = "/insertUserParcelleCulture", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String insertUserParcelleCulture(@RequestParam String utilisateur,@RequestParam String parcelle,@RequestParam String culture,@RequestParam String quantite,@RequestParam String date)
+    {
+        try{
+			Utilisateur u = new Utilisateur();
+            Date nD = u.getSqlDate(date);
+			double q = Double.parseDouble(quantite);
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			Portefeuille po = new Portefeuille(); 
+			int checkPortefeuille = po.checkPortefeuille(c,utilisateur);
+			if (checkPortefeuille <= 0) {
+				Portefeuille nPo = new Portefeuille(utilisateur);
+				po.insertPortefeuille(c, nPo);
+				String id = po.getIdLastRecord(c);
+				Portefeuille nPo2 = new Portefeuille(id, 0);
+				po.insertPortefeuilleActivite(c, nPo2);
+				ParcelleCulture p = new ParcelleCulture();
+				ParcelleCulture nP = new ParcelleCulture(parcelle, culture, q, nD);
+				p.insertParcelleCulture(c,nP);
+				double pR = p.getPrixAchatCulture(c,culture);
+				double act = (pR * q) * (-1);
+				Portefeuille nPo3 = new Portefeuille(id, act);
+				po.insertPortefeuilleActivite(c, nPo3);
+				c.close();
+				return "{ \"success\": \"Insertion réussie\" }";
+			}
+			else{
+				String id = po.getUserPortefeuilleId(c, utilisateur);
+				ParcelleCulture p = new ParcelleCulture();
+				ParcelleCulture nP = new ParcelleCulture(parcelle, culture, q, nD);
+				p.insertParcelleCulture(c,nP);
+				double pR = p.getPrixAchatCulture(c,culture);
+				double act = (pR * q) * (-1);
+				Portefeuille nPo3 = new Portefeuille(id, act);
+				po.insertPortefeuilleActivite(c, nPo3);
+				c.close();
+				return "{ \"success\": \"Insertion réussie\" }";
+			}
+		}
+
+		catch (Exception e) {
+			e.printStackTrace();
+			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
+		}
+    }
+
+	@GetMapping(value = "/portefeuille", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getPortefeuille(@RequestParam String user)
+    {
+        try{
+			Connect con = new Connect();
+			Connection c = con.makeConnection();
+			String nId = user;
+			Portefeuille p = new Portefeuille();
+			double pC = p.getUserPortefeuille(c, user);
+			JSONObject nbJson = new JSONObject();
+			nbJson.put("portefeuille", pC);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.put(nbJson);
+			c.close();
+			return jsonArray.toString();
+			
 		}
 
 		catch (Exception e) {

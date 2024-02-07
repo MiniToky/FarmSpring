@@ -11,6 +11,7 @@ public class Parcelle {
     String terrain;
     double superficie;
     String culture;
+    String proprietaire;
 
     public String getId()
     {
@@ -108,6 +109,22 @@ public class Parcelle {
         return;
     }
 
+    public String getProprietaire()
+    {
+        return this.proprietaire;
+    }
+
+    public void setProprietaire(String s) throws Exception
+    {
+        if(s != null){
+            this.proprietaire = s;
+        }
+        else{
+            throw new Exception("Proprietaire-non-valide");
+        }
+        return;
+    }
+
     public Parcelle() throws Exception
     {
 
@@ -139,6 +156,14 @@ public class Parcelle {
         this.setLongueur(lo);
         this.setLargeur(larg);
         this.setTerrain(t);
+    }
+
+    public Parcelle(String nId,double s,String t,String p) throws Exception
+    {
+        this.setId(nId);
+        this.setSuperficie(s);
+        this.setTerrain(t);
+        this.setProprietaire(p);
     }
 
     public void insertParcelle(Connection c, Parcelle p) throws Exception
@@ -174,6 +199,24 @@ public class Parcelle {
         Vector v = new Vector();
         while (r.next()) {
             v.add(new Parcelle(r.getString(1),r.getDouble(2),r.getString(3)));
+        }
+        Parcelle[] allParcelle = new Parcelle[v.size()];
+        v.copyInto(allParcelle);
+        s.close();
+        return allParcelle;
+    }
+
+    public Parcelle[] findSpecifiedUserParcelle(Connection c, String u) throws Exception
+    {
+        if (c == null) {
+            Connect con = new Connect();
+            c = con.makeConnection();
+        }
+        Statement s = c.createStatement();
+        ResultSet r = s.executeQuery("select * from ParcelleDetailsTerrainProprietaire where proprietaire = '"+u+"'");
+        Vector v = new Vector();
+        while (r.next()) {
+            v.add(new Parcelle(r.getString(1),r.getDouble(2),r.getString(3),r.getString(4)));
         }
         Parcelle[] allParcelle = new Parcelle[v.size()];
         v.copyInto(allParcelle);

@@ -46,6 +46,12 @@
 			<scope>provided</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongo-java-driver</artifactId>
+			<version>3.12.12</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
