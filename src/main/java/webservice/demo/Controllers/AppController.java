@@ -259,6 +259,7 @@ public class AppController {
 			return "{ \"error\": \"Oups... Quelque chose s'est mal passé\" }";
 		}
     }
+    
 
     @GetMapping(value = "/usercultures", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getUserCultures(@RequestParam String user)
